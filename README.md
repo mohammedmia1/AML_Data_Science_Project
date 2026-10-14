@@ -1,95 +1,79 @@
 # AML Investigation Prioritization
 
-**An end-to-end machine-learning case study: from synthetic transactions to a capacity-constrained investigation queue.**
+**An end-to-end data science case study of risk ranking under a fixed investigation budget.**
 
-> **Business question:** If investigators can review only a fixed number of account-days, can a risk-ranking model help them find more *synthetic positive labels* than selecting records at random?
+When investigators cannot review every flagged record, **which account-days should they review first?** This project turns synthetic transaction activity into a ranked review queue and measures how many positive *benchmark labels* appear within a fixed capacity. It does **not** identify confirmed financial crimes.
 
-[**Explore the interactive case study →**](https://mohammedmia1.github.io/AML_Data_Science_Project/) · [Walk through the project](PROJECT_GUIDE.md) · [Open the model notebook](notebooks/AML_Model_Development.ipynb) · [Download the Tableau companion](tableau/AML_Investigation_Prioritization_Dashboard.twbx)
+[**Explore the live interactive case study →**](https://mohammedmia1.github.io/AML_Data_Science_Project/) · [Model notebook](notebooks/AML_Model_Development.ipynb) · [Technical walkthrough](PROJECT_GUIDE.md) · [Tableau workbook](tableau/AML_Investigation_Prioritization_Dashboard.twbx)
 
-![AML risk-prioritization result dashboard: 494,707 account-days, 2,747 selected, 389 positive labels and 46.73x lift](images/AML_Canonical_Dashboard.png)
+![Canonical investigation capacity chart showing 494,707 scored account-days, 2,747 review slots, 389 synthetic positives and 46.73 times random-review lift](images/AML_Canonical_Dashboard.png)
 
-## 01 / Decision and outcome
+## The decision in numbers
 
-The model ranks **account-day records**, not people. A review policy then selects the highest-ranked records within a predefined investigation workload. The project demonstrates **ranking under a resource constraint**; it does not claim to identify confirmed financial crime.
+| Held-out test period | Result |
+|:--|--:|
+| Account-days scored | **494,707** |
+| Reviews available | **2,747** (0.555%) |
+| Positive synthetic labels in selected queue | **389** |
+| Precision at review capacity | **14.16%** |
+| Recall of all test-period positives | **25.95%** |
+| Lift versus random selection at equal capacity | **46.73×** |
+| ROC-AUC / average precision (PR-AUC) | **0.8523 / 0.1214** |
 
-| Held-out test metric | Result |
-|:---|---:|
-| Scored account-days | **494,707** |
-| Review slots | **2,747 (0.555%)** |
-| Synthetic positive labels in the review queue | **389** |
-| Precision at capacity | **14.16%** |
-| Recall of test-period positives | **25.95%** |
-| Lift over random review at the same capacity | **46.73×** |
-| ROC-AUC / average precision (PR-AUC) | 0.8523 / 0.1214 |
+**Reading the result:** Reviewing about **0.56%** of held-out account-days captures about **26%** of positive *synthetic* labels. The lift is a concentration ratio against random selection—not an estimate of prevented losses, investigative productivity, or real crime detection.
 
-**Interpretation:** Reviewing approximately 0.56% of the held-out account-days captures approximately 26% of positive synthetic labels. Lift measures concentration relative to random selection at an equal review budget—not prevented losses, case productivity, or criminal detection in production.
-
-## 02 / How the system fits together
+## How it works
 
 ```mermaid
 flowchart LR
-    A["Synthetic transaction data"] --> B["SQL account-day aggregation"]
-    B --> C["Frozen account-day modeling TSV"]
-    C --> D["Chronological train / validation / test"]
-    D --> E["Logistic baseline + XGBoost ranking"]
-    E --> F["Validation-defined review budget"]
-    F --> G["Held-out test queue + evaluation"]
-    G --> H["Interactive case study / Tableau"]
+    A["Synthetic transactions"] --> B["SQL account-day features"]
+    B --> C["Frozen modeling TSV"]
+    C --> D["Chronological split"]
+    D --> E["XGBoost ranking"]
+    E --> F["Fixed review queue"]
+    F --> G["Evaluation + interactive dashboard"]
 ```
 
-The **exact canonical model** is reproduced from the frozen account-day TSV. The SQL engineering script is provided and structurally reviewed, but **a raw-transactions-to-TSV rebuild has not been independently reconciled**. The diagram shows the intended analytical process, not a claim that every upstream stage was reexecuted in this release.
+| Stage | Implementation and decision |
+|:--|:--|
+| **Data** | One row per `account_id` × `activity_date`; synthetic benchmark labels. [Provenance and hash](data/README.md). |
+| **Features** | Nine predictors: six log-transformed activity measures plus three ratios/diversity features. [MySQL engineering logic](sql/AML_Portfolio_Pipeline.sql). |
+| **Split** | Train **Sep 1–6**, validate **Sep 7–8**, test **Sep 9–10, 2022**. No account IDs or dates in model inputs. |
+| **Model** | Training-weighted XGBoost with fixed documented hyperparameters; logistic regression is a development baseline, without a published numeric comparison. [Notebook](notebooks/AML_Model_Development.ipynb). |
+| **Review policy** | A **2,500-row validation workload** yields **2,747 test review slots** at the same fraction. Highest-ranked test records enter the queue. |
+| **Evaluation** | Precision, recall and lift at capacity, plus ROC-AUC and average precision. [Evaluation protocol](reports/MODEL_EVALUATION.md). |
 
-## 03 / Data and modeling decisions
+The SQL is a documented upstream reconstruction. **Exact numerical reproducibility is verified from the frozen account-day TSV**, but a separate raw-transaction-to-TSV SQL reconciliation has **not** been completed.
 
-**Unit of analysis.** An account's activity on one calendar day. The benchmark transactions and target labels are synthetic. The original account-day source file is omitted due to size; [its SHA-256, provenance and schema are documented](data/README.md).
+## Explore the work
 
-**Chronological split.** Training: **September 1–6, 2022** (1,534,403 rows). Validation: **September 7–8** (450,244 rows). Held-out test: **September 9–10** (494,707 rows). Dates and account identifiers are used for partitioning or reporting, **not** as predictive inputs.
+| Open | What you will find |
+|:--|:--|
+| [Live case study](https://mohammedmia1.github.io/AML_Data_Science_Project/) | Adjust review capacity and explore the actual held-out ranking trade-off. |
+| [Model development notebook](notebooks/AML_Model_Development.ipynb) | Readable code for temporal splitting, feature transformations, baseline, ranking and evaluation. |
+| [Project walkthrough](PROJECT_GUIDE.md) | Technical reasoning, evaluation boundaries and interview questions. |
+| [Canonical training script](src/run_canonical.py) | Executable reproduction of the frozen model, scored export and website capacity curve. |
+| [Tableau companion](tableau/AML_Investigation_Prioritization_Dashboard.twbx) | Downloadable working dashboard; requires Tableau to open and is not previewable on GitHub. |
+| [Exact results](reports/metrics.json) | Saved evaluation numbers, model versions, seed and source checksum. |
 
-**Features.** Nine engineered predictors: six `log1p` transforms of transaction amounts, counts and banks, plus outgoing ratio, currency diversity and rapid-transaction ratio. [Explore the SQL transformation](sql/AML_Portfolio_Pipeline.sql) and [review model implementation](src/run_canonical.py).
+## Reproduce or verify
 
-**Model and policy.** A logistic-regression baseline provides a development comparator. The published final model is a fixed-configuration XGBoost classifier. A validation workload of **2,500** translates proportionally to **2,747** held-out review slots; the selected queue consists of the highest-scored account-days. Class weights use training labels only, and test results are not used to select review capacity.
-
-**Evaluation.** Precision, recall, lift, ROC-AUC and average precision reflect different questions. Capacity-based precision and recall are central to the business decision; ROC-AUC and PR-AUC evaluate overall discrimination. See the [evaluation protocol](reports/MODEL_EVALUATION.md).
-
-## 04 / Explore and inspect
-
-| Resource | Why open it |
-|:---|:---|
-| [Interactive case study](https://mohammedmia1.github.io/AML_Data_Science_Project/) | Move a review-capacity slider and inspect the precision/recall trade-off. |
-| [Project walkthrough](PROJECT_GUIDE.md) | Understand each step and its technical justification without reading every code file. |
-| [Model notebook](notebooks/AML_Model_Development.ipynb) | Follow the data split, features, baseline, final model, and evaluation logic. |
-| [SQL pipeline](sql/AML_Portfolio_Pipeline.sql) | Examine account-day aggregation and feature engineering. |
-| [Tableau workbook](tableau/AML_Investigation_Prioritization_Dashboard.twbx) | Download the optional working `.twbx` companion (GitHub does not preview Tableau binaries). |
-| [Canonical metrics](reports/metrics.json) | See exact recorded outputs and environment versions. |
-
-## 05 / Reproduce and validate
-
-**Full local reproduction requires the exact frozen TSV.** Python 3.13.5 and dependency versions are pinned in `requirements.txt`.
+Requires Python **3.13.5** and versions pinned in [`requirements.txt`](requirements.txt). For a full rerun, obtain the **exact** source `aml_modeling_dev.tsv` identified by SHA-256 in [`data/README.md`](data/README.md). Place it at `data/local/aml_modeling_dev.tsv`.
 
 ```bash
 python -m pip install -r requirements.txt
-# Place aml_modeling_dev.tsv in data/local/ (or set AML_INPUT_DIR)
-python src/run_canonical.py
-python tests/check_artifacts.py
+python src/run_canonical.py        # requires frozen source TSV
+python tests/check_artifacts.py   # checks published artifacts without the TSV
 ```
 
-`src/run_canonical.py` validates the input file checksum and produces a trained model, scored test export, metrics JSON, and the capacity curve under `artifacts/`. The repository commits only the canonical model/metrics/website artifacts, **not** the large source TSV or scored CSV.
+The training script writes to `artifacts/` (ignored by Git). CI validates the **committed metric/website contract and Python syntax**, not complete model retraining. The notebook is source code with no stored training-cell outputs; the summary above comes from the verified canonical artifacts.
 
-**Without the TSV**, run `python tests/check_artifacts.py` to validate the published metrics, capacity curve, model presence and website references. GitHub Actions runs these public-artifact checks, Python compilation and notebook-JSON validation on pushes. **These checks are not equivalent to retraining the model or executing the SQL pipeline in CI.**
+## Boundaries that matter
 
-The notebook is provided as *reproducible source code*, not an executed notebook with stored outputs. [Read the reproducibility limits](PROJECT_GUIDE.md#verification-boundaries).
+- **Synthetic labels only**; no demonstrated criminal detection, savings or production deployment.
+- **Two-day test window**; no established robustness under population drift.
+- **Scores are ranking signals**, not validated calibrated probabilities.
+- **SQL** is reviewed but not independently reconciled from the original raw transactions to the exact TSV.
+- **Tableau** is a usable companion, with further visual polish deferred.
 
-## 06 / Limitations and next steps
-
-- **Synthetic-only:** labels do not establish confirmed criminal conduct or financial impact.
-- **Short held-out period:** two test days do not establish stability under population drift.
-- **Scores are rankings:** they have not been validated as calibrated probabilities.
-- **Review economics unknown:** no investigator costs, analyst workload measurements or downstream case outcomes are available.
-- **SQL-to-model lineage:** raw transaction aggregation needs a separate source-to-TSV reconciliation.
-- **Tableau:** a working optional companion; the interactive case study is the primary verified online presentation.
-
-**Next technical extension:** add a reproducible raw-transaction SQL test and examine stability across additional temporal holdouts—not a new claim about production AML efficacy.
-
----
-
-*Portfolio demonstration using synthetic benchmark data. [Detailed project walkthrough](PROJECT_GUIDE.md) · [Source provenance](data/README.md) · [Evaluation methodology](reports/MODEL_EVALUATION.md).*
+[**Detailed methodology and interview walkthrough →**](PROJECT_GUIDE.md) · [Test design](reports/MODEL_EVALUATION.md) · [Source data contract](data/README.md)
