@@ -1,0 +1,30 @@
+name: Validate published artifacts
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate published results
+        run: python tests/check_artifacts.py
+      - name: Compile runnable Python
+        run: python -m py_compile src/run_canonical.py tests/check_artifacts.py tableau/verify_tableau_csv.py
+      - name: Validate Jupyter notebook JSON
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          nb = json.loads(Path('notebooks/AML_Model_Development.ipynb').read_text())
+          assert nb['nbformat'] == 4
+          assert len(nb['cells']) >= 10
+          print('PASS: notebook JSON')
+          PY

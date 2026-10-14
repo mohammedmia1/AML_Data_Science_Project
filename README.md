@@ -25,7 +25,7 @@ I built a supervised risk-ranking workflow using synthetic transaction-derived a
 
 ## Method
 
-1. **Represent activity:** aggregate synthetic transactions to account-day features with SQL.
+1. **Represent activity:** aggregate synthetic transactions to account-day features using the [SQL engineering pipeline](sql/AML_Portfolio_Pipeline.sql).
 2. **Avoid look-ahead:** train on September 1–6, validate on September 7–8, and evaluate on September 9–10, 2022.
 3. **Model ranking:** compare a logistic regression baseline and XGBoost during development; the final saved model uses the documented XGBoost configuration.
 4. **Freeze capacity:** translate a 2,500-case validation queue to the same proportional test review capacity.
@@ -44,7 +44,15 @@ The script writes the model, predictions, metrics, and capacity curve to `artifa
 
 ## Explore the results
 
-The [interactive case study](https://mohammedmia1.github.io/AML_Data_Science_Project/) lets you vary investigation capacity and inspect the trade-off between precision and recall. Its numbers are computed from the canonical held-out prediction ranking. The Tableau-ready CSV is provided separately; a Tableau workbook is not claimed as final until its extract is refreshed and verified.
+The [interactive case study](https://mohammedmia1.github.io/AML_Data_Science_Project/) lets you vary investigation capacity and inspect the trade-off between precision and recall. Its numbers are computed from the canonical held-out prediction ranking. The optional [Tableau dashboard companion](tableau/AML_Investigation_Prioritization_Dashboard.twbx) is a working Tableau Public workbook using the canonical evaluation; visual refinements can be made without altering the trained model. The scored Tableau-ready CSV is generated locally rather than committed. Tableau visual design can be refined independently without changing the model or source-of-truth metrics.
+
+## Portfolio components
+
+- **Model:** frozen XGBoost classifier, trained on temporal development records; serialized in `models/`.
+- **Engineering:** MySQL account-day transformation documented in `sql/` (not independently raw-data-reexecuted in this repository).
+- **Analysis:** primary notebook and runnable `src/run_canonical.py`.
+- **Validation:** `python tests/check_artifacts.py` and GitHub Actions validation of public metrics, chart curves, and notebook structure.
+- **Visualization:** interactive case study plus optional Tableau Public workbook companion.
 
 ## Limitations
 

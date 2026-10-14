@@ -34,6 +34,16 @@ test.to_csv(out/'aml_tableau_decision_data_canonical.csv',index=False)
 tp=int(test.loc[test.selected_for_review.eq(1),'has_laundering_tx'].sum());total=int(yt.sum());base=float(yt.mean())
 metrics={'train_rows':len(train),'validation_rows':len(val),'test_rows':len(test),'train_positives':int(y.sum()),'validation_positives':int(yv.sum()),'test_positives':total,'validation_capacity':2500,'test_capacity':capacity,'selected_positives':tp,'precision':tp/capacity,'recall':tp/total,'lift':(tp/capacity)/base,'roc_auc':roc_auc_score(yt,test_prob),'pr_auc':average_precision_score(yt,test_prob),'xgboost_version':xgboost.__version__,'pandas_version':pd.__version__,'sklearn_version':sklearn.__version__,'python_version':platform.python_version(),'seed':42,'n_jobs':2,'features':xt.columns.tolist(),'source_file_sha256':hashlib.file_digest(open(root/'aml_modeling_dev.tsv','rb'),'sha256').hexdigest()}
 (out/'metrics.json').write_text(json.dumps(metrics,indent=2));
-labels=yt.to_numpy()[rank_order].astype('int8');cum=np.cumsum(labels,dtype=np.int64);k=np.arange(1,15001);positives=cum[:15000];capacity_json={'source':'canonical_xgboost_run','total':len(test),'total_positives':total,'default_capacity':capacity,'capacities':k.tolist(),'positives':positives.tolist()}
+# The published website expects rows [{k,tp,precision,recall,lift}, ...].
+# Use the exact same serialization contract for a fresh pipeline run.
+labels=yt.to_numpy()[rank_order].astype('int8')
+cum=np.cumsum(labels,dtype=np.int64)
+rows=[]
+for k in range(1, 15001):
+    tp_k=int(cum[k-1])
+    precision_k=tp_k/k
+    rows.append({'k':k, 'tp':tp_k, 'precision':precision_k,
+                 'recall':tp_k/total, 'lift':precision_k/base})
+capacity_json={'rows':rows,'provenance':'Canonical XGBoost 3.1.3 model; September 9-10 2022 test; frozen validation-derived review rate'}
 (out/'capacity.json').write_text(json.dumps(capacity_json,separators=(',',':')))
 print(json.dumps(metrics,indent=2),flush=True)

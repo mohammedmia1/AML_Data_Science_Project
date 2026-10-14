@@ -1,3 +1,7 @@
-# SQL feature engineering
+# SQL account-day engineering
 
-The original project used MySQL to aggregate transaction activity to account-day level. The modeling TSV is the fixed input for the published run. The exact SQL script is available in the source workspace but has **not yet been copied into this clean package**; do not claim that SQL-to-TSV reconstruction has been tested end-to-end. Add the validated SQL file before publishing this directory as a complete SQL deliverable.
+`AML_Portfolio_Pipeline.sql` documents a runnable MySQL 8+ transformation from synthetic raw transactions into development and later-period account-day views. It preserves the account-centric sender/receiver expansion, ten-minute rapid activity flag, daily aggregations, and frozen model-input columns used by the project.
+
+**Verification scope:** The pipeline's logic was reconstructed from the original project SQL and reviewed structurally, but **not reexecuted against the original raw transaction CSV** in this environment. The canonical model is independently reproducible from the exact frozen development TSV listed in `data/README.md`. Do not claim that a fresh raw-SQL rebuild has passed bit-for-bit reconciliation unless you actually rerun it and compare exports.
+
+Prerequisite: create `aml_portfolio.raw_transactions` with the required field names/types and load the synthetic AML benchmark transactions. Execute the SQL in MySQL 8+, export `vw_modeling_dev` with matching column order and precision, then compare split counts, labels, and source hash to the frozen TSV before rerunning the Python pipeline.
