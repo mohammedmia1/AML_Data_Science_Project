@@ -9,6 +9,6 @@ The portfolio's trained model, metrics and website use the same frozen canonical
 - Open the `.twbx` in Tableau Public and check that it uses **native extracts**, that all dashboard sheets render, and that the investigation queue contains scored account-days.
 - Compare the five KPI cards to the figures above and validate the risk score bands and review-outcome composition (**389 selected positives; 2,358 other selected rows**).
 - Reconcile any fixed labels, images, tooltips or secondary sources with those figures. Static decoration is fine; charts presented as measured results should be native worksheets or independently validated visualizations.
-- Run `python tableau/verify_tableau_csv.py /path/to/aml_tableau_decision_data_canonical.csv` against the scored export.
+- Run `python tests/verify_scored_export.py /path/to/aml_tableau_decision_data_canonical.csv` against the scored export.
 
 A working Tableau workbook may be included while design refinement is in progress. The presence of a `.twbx` is **not** proof of independent native-app visual verification. The interactive website is the currently verified presentation.
