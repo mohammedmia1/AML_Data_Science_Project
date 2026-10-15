@@ -2,9 +2,9 @@
 AML investigation prioritization — account-day feature engineering (MySQL 8+).
 Input: aml_portfolio.raw_transactions, loaded from the synthetic AML benchmark.
 This is a streamlined version of the feature logic used to produce the modeling
-extracts. Verify the output against the frozen development TSV before using it
-as a replacement source; this SQL has not been reexecuted against the raw CSV
-in this publication environment.
+extracts. Numeric bank codes are normalized before DISTINCT counting. The account-day logic has been reconciled in pandas against the raw CSV
+(see reports/SQL_RECONCILIATION.md), but the SQL has not been executed
+in MySQL or shown to reproduce the exact TSV bytes.
 
 Expected raw columns:
 transaction_timestamp, from_bank, from_account, to_bank, to_account,
@@ -20,7 +20,7 @@ USE aml_portfolio;
 CREATE OR REPLACE VIEW vw_account_transactions AS
 SELECT transaction_timestamp, DATE(transaction_timestamp) AS activity_date,
        from_account AS account_id, from_bank AS account_bank,
-       to_account AS counterparty_account, to_bank AS counterparty_bank,
+       to_account AS counterparty_account, CAST(to_bank AS UNSIGNED) AS counterparty_bank,
        'OUTGOING' AS direction, amount_paid AS amount,
        payment_currency AS currency, payment_format,
        CASE WHEN from_bank <> to_bank THEN 1 ELSE 0 END AS is_cross_bank,
@@ -28,7 +28,7 @@ SELECT transaction_timestamp, DATE(transaction_timestamp) AS activity_date,
 FROM raw_transactions
 UNION ALL
 SELECT transaction_timestamp, DATE(transaction_timestamp),
-       to_account, to_bank, from_account, from_bank,
+       to_account, to_bank, from_account, CAST(from_bank AS UNSIGNED),
        'INCOMING', amount_received, receiving_currency, payment_format,
        CASE WHEN from_bank <> to_bank THEN 1 ELSE 0 END,
        is_laundering
