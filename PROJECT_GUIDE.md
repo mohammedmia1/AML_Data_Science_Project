@@ -30,7 +30,7 @@ Account IDs and timestamps are excluded from predictors. This reduces obvious lo
 
 The [notebook](notebooks/AML_Model_Development.ipynb) includes a standardized, class-balanced logistic-regression baseline and an XGBoost challenger. The published serialized model is XGBoost with 300 trees, max depth 5, learning rate 0.05, subsampling 0.8, column subsampling 0.8, seed 42 and two threads. The code uses nine features and training-derived class weights.
 
-**Important:** The current published artifacts preserve final-model test metrics, but do not publish a numeric side-by-side baseline comparison. Do not claim an exact improvement over logistic regression without producing and validating that comparison on the validation partition.
+**Measured validation comparison (same 2,500-record review budget):** The executed [notebook](notebooks/AML_Model_Development.ipynb) reports logistic regression PR-AUC **0.0378**, ROC-AUC **0.7995**, and **170** positive synthetic labels captured (6.80% precision). XGBoost reports PR-AUC **0.1286**, ROC-AUC **0.8446**, and **383** positive labels captured (15.32% precision). These are *validation-period* measurements used to compare methods—not the separate held-out test evaluation of the frozen XGBoost model.
 
 ## 5. Convert ranking into a review decision
 
@@ -88,6 +88,6 @@ The script checks the source SHA-256 before fitting and writes the model, scored
 ## Next iteration, without rewriting validated history
 
 1. Independently reconcile raw MySQL export with the exact TSV used for training.
-2. Add numeric logistic-vs-XGBoost validation comparisons and stronger temporal holdouts if source data permits.
+2. Evaluate stability across longer, chronologically separated holdouts if additional suitable source periods become available.
 3. Consider a compact precomputed analytical export for browser-accessible SQL results and deeper explanations.
 4. Refine Tableau layout independently from the frozen metrics and GitHub Pages interface.

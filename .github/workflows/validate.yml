@@ -17,7 +17,9 @@ jobs:
       - name: Validate published results
         run: python tests/check_artifacts.py
       - name: Compile runnable Python
-        run: python -m py_compile src/run_canonical.py tests/check_artifacts.py tests/verify_scored_export.py
+        run: python -m py_compile src/run_canonical.py tests/check_artifacts.py tests/verify_scored_export.py tests/check_notebook_evidence.py
+      - name: Validate executed notebook evidence
+        run: python tests/check_notebook_evidence.py
       - name: Validate Jupyter notebook JSON
         run: |
           python - <<'PY'
