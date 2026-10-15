@@ -1,47 +1,39 @@
-"""Check saved notebook results against the published evaluation numbers.
-
-No Jupyter kernel or large training data is needed for this check.
-The check validates saved evidence, not full model reproducibility.
-"""
-
+"""Verify saved notebook evidence, not a new end-to-end model training run."""
 import json
 from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+nb=json.loads((ROOT/'notebooks/AML_Model_Development.ipynb').read_text())
+metrics=json.loads((ROOT/'reports/metrics.json').read_text())
+cells=[c for c in nb['cells'] if c['cell_type']=='code']
+assert len(cells)==9, 'Expected nine guided code cells'
+assert all(c.get('outputs') for c in cells), 'Missing saved notebook output'
 
-ROOT = Path(__file__).resolve().parents[1]
-notebook_path = ROOT / "notebooks" / "AML_Model_Development.ipynb"
-metrics_path = ROOT / "reports" / "metrics.json"
+def cell_source(c):return ''.join(c['source'])
+def saved_text(c):
+    lines=[]
+    for out in c['outputs']:
+        data=out.get('data',{})
+        for x in [out.get('text',[]),data.get('text/plain',[]),data.get('text/html',[])]:
+            lines.append(''.join(x) if isinstance(x,list) else str(x))
+    return '\n'.join(lines)
 
-notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
-metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+def find_code(fragment):
+    return next(c for c in cells if fragment in cell_source(c))
 
-code_cells = [cell for cell in notebook["cells"] if cell["cell_type"] == "code"]
-assert len(code_cells) == 7, "Expected seven code cells"
-assert all(cell.get("outputs") for cell in code_cells), "Notebook output is missing"
-
-# Jupyter captures print statements as stream outputs.
-printed_text = "\n".join(
-    "".join(output.get("text", []))
-    for cell in code_cells
-    for output in cell["outputs"]
-    if output.get("output_type") == "stream"
-)
-
-# These are independently measured *validation* figures, not test metrics.
-validation_values = [
-    "Logistic regression validation PR-AUC: 0.0378",
-    "XGBoost validation PR-AUC: 0.1286",
-    "0.7995", "0.8446", "170", "383", "0.0680", "0.1532",
-]
-for value in validation_values:
-    assert value in printed_text, f"Missing validation evidence: {value}"
-
-# Confirm the held-out figures agree with the committed canonical metrics.
-for label, expected in [
-    ("Test account-days", str(metrics["test_rows"])),
-    ("Review slots", str(metrics["test_capacity"])),
-    ("Positive labels selected", str(metrics["selected_positives"])),
-]:
-    matching_line = next((line for line in printed_text.splitlines() if label in line), "")
-    assert expected in matching_line, f"Saved output disagrees with metrics.json: {label}"
-
-print("PASS: saved notebook outputs and canonical summary are consistent")
+inspection=saved_text(find_code('Duplicate account-days:'))
+for value in ['2479354','7131','Duplicate account-days: 0']:
+    assert value in inspection, 'Dataset inspection missing '+value
+split=saved_text(find_code('Train, validation, test:')) if any('Train, validation, test:' in cell_source(c) for c in cells) else '\n'.join(saved_text(c) for c in cells)
+for value in ['1534403','450244','494707']:
+    assert value in split, 'Chronological split missing '+value
+comparison=saved_text(find_code('count_positives_at_budget'))
+for value in ['0.0378','0.1286','0.7995','0.8446','170','383','6.80%','15.32%']:
+    assert value in comparison, 'Missing validation comparison '+value
+chart=find_code('ax.barh')
+assert 'image/png' in chart['outputs'][0].get('data',{}),'Missing saved model-comparison chart'
+assert 'baseline_found, xgb_found' in cell_source(chart),'Chart must read from measured comparison variables'
+test=saved_text(find_code('results = pd.DataFrame'))
+for value in [f'{metrics["test_rows"]:,}',f'{metrics["test_capacity"]:,}',f'{metrics["selected_positives"]:,}',f'{metrics["selected_positives"]/metrics["test_capacity"]:.2%}',f'{metrics["selected_positives"]/1499:.2%}','46.73×']:
+    assert value in test,'Missing published held-out value '+value
+assert any('How we verified the project' in ''.join(c['source']) for c in nb['cells'] if c['cell_type']=='markdown')
+print('PASS: saved notebook results, comparison chart and canonical numbers are consistent')
