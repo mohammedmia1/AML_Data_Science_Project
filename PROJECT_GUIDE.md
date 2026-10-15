@@ -12,7 +12,7 @@ The benchmark target is `has_laundering_tx`, a synthetic label. It is neither a 
 
 The modeling table contains one row for each `account_id` and `activity_date`. The SQL source demonstrates how synthetic payments can be expanded into account-centric outgoing and incoming activities before aggregating counts, amounts, unique banks, currency diversity, and rapid transactions. The model uses nine engineered predictors: `log_transaction_count`, `log_total_sent`, `log_total_received`, `log_avg_transaction_amount`, `log_max_transaction_amount`, `log_unique_banks`, `outgoing_ratio`, `currency_diversity`, and `rapid_transaction_ratio`.
 
-The frozen modeling TSV is identified by SHA-256 in [data/README.md](data/README.md). The SQL script in [sql/](sql/AML_Portfolio_Pipeline.sql) is a source-reconstruction demonstration, not independently verified raw-to-model lineage.
+The frozen modeling TSV is identified by SHA-256 in [data/README.md](data/README.md). An independent **Python reconstruction of the SQL logic** matched the raw synthetic transactions to the frozen dataset on account-day keys, transaction counts, labels and normalized bank-diversity counts. [Review the reconciliation findings](reports/SQL_RECONCILIATION.md). The published [SQL script](sql/AML_Portfolio_Pipeline.sql) has not been run end-to-end inside MySQL.
 
 ## 3. Reduce temporal leakage
 
@@ -68,7 +68,7 @@ The script checks the source SHA-256 before fitting and writes the model, scored
 | Canonical training | Full independent rerun of frozen TSV and byte-for-byte artifact reconciliation during QA | Real-world validation |
 | Website | Published capacity curve and fixed metrics cross-checked against canonical scored test rows; site reported accessible | Production uptime or business impact |
 | CI | Published artifact contract, code compilation, notebook structure | Full retraining or complete notebook execution |
-| SQL | Structure and expected modeling columns reviewed | Fresh raw-transactions-to-TSV exact reconciliation |
+| SQL | Independent Python reconstruction compared original raw transactions to frozen data; keys, counts, labels and normalized bank counts matched | Native MySQL run and byte-identical TSV export |
 | Tableau | Working workbook available as a companion | Fully finished visual polish or automated Tableau rendering in CI |
 
 ## 8. Answers to likely reviewer questions
@@ -81,13 +81,13 @@ The script checks the source SHA-256 before fitting and writes the model, scored
 
 **Why is 46.73× lift not a 46.73× business improvement?** It is a mathematical concentration ratio against random sampling at a fixed budget. No labor savings, dollar losses, or investigator outcomes were measured.
 
-**Is the SQL pipeline end-to-end reproducible?** The source-to-feature logic is documented, but the exact frozen source was not regenerated from the raw transactions during this release. The modeling run *from the frozen TSV* is reproducible.
+**Is the SQL pipeline end-to-end reproducible?** Raw transactions were checked against the frozen modeling table using an independent Python reconstruction of the SQL logic. All account-day keys, transaction counts, labels and normalized unique-bank values matched; [see evidence](reports/SQL_RECONCILIATION.md). A native MySQL rerun and identical exported TSV bytes have not been verified. Modeling *from the frozen TSV* is reproducible.
 
 **Why not serve the full original dataset?** The 237.7 MB modeling TSV is not checked into the repo. The checksum and schema establish the exact required input without presenting a similarly named benchmark extract as equivalent.
 
 ## Next iteration, without rewriting validated history
 
-1. Independently reconcile raw MySQL export with the exact TSV used for training.
+1. Optionally run the corrected SQL in MySQL 8+ and compare the exported features with the frozen TSV using documented numeric tolerances.
 2. Evaluate stability across longer, chronologically separated holdouts if additional suitable source periods become available.
 3. Consider a compact precomputed analytical export for browser-accessible SQL results and deeper explanations.
 4. Refine Tableau layout independently from the frozen metrics and GitHub Pages interface.
