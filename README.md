@@ -45,6 +45,8 @@ flowchart LR
 
 The SQL is a documented upstream reconstruction. **Exact numerical reproducibility is verified from the frozen account-day TSV**, but a separate raw-transaction-to-TSV SQL reconciliation has **not** been completed.
 
+**Validation comparison (same 2,500-record budget):** logistic regression ranked **170** positive synthetic labels (PR-AUC **0.0378**); XGBoost ranked **383** (PR-AUC **0.1286**). These measured **validation** results are distinct from the **389 positives on the held-out test**. [See each step and its executed output in the guided notebook](notebooks/AML_Model_Development.ipynb).
+
 ## Explore the work
 
 | Open | What you will find |
@@ -66,7 +68,7 @@ python src/run_canonical.py        # requires frozen source TSV
 python tests/check_artifacts.py   # checks published artifacts without the TSV
 ```
 
-The training script writes to `artifacts/` (ignored by Git). CI validates the **committed metric/website contract and Python syntax**, not complete model retraining. The notebook is source code with no stored training-cell outputs; the summary above comes from the verified canonical artifacts.
+The training script writes to `artifacts/` (ignored by Git). CI validates the **committed metric/website contract and Python syntax**, not complete model retraining. The **guided notebook includes real saved execution outputs** from the checksum-verified synthetic source: the baseline comparison, feature/split checks, and frozen test evaluation. It also has an [MLOps primer](notebooks/AML_Model_Development.ipynb) explaining reproducibility, artifacts, automated checks, and the difference between this demonstration and production deployment.
 
 ## Boundaries that matter
 
