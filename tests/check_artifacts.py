@@ -35,7 +35,9 @@ assert volume['meta']['n'] == metrics['test_rows']
 assert volume['meta']['positives'] == metrics['test_positives']
 assert volume['tp'][0] == 0
 assert volume['tp'][1:] == [row['tp'] for row in rows], 'Dashboard ranking differs from published canonical capacity curve'
-assert math.isclose(volume['positiveVolume'][12], 52762770804.54)
+assert math.isclose(volume['labeledVolume'][12], 50048709.64)
+assert math.isclose(volume['labeledVolume'][2747], 148871390.41)
+assert all(0 <= labeled <= total for labeled, total in zip(volume['labeledVolume'], volume['volume']))
 assert 'id="coverage"' not in page
 assert 'First 100' in page
 assert '389' in page

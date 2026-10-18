@@ -53,10 +53,12 @@ I built the live dashboard to connect review capacity with detection performance
 
 - Move the cutoff one account-day at a time and compare precision, recall, and F1.
 - Compare the original 2,747-review policy with the retrospective highest-F1 cutoff of 822.
-- Inspect unique USD transaction activity linked to selected accounts, including activity associated with selected positive-labeled accounts.
+- Compare total USD activity involving selected accounts with the portion whose individual transactions carry a positive synthetic laundering label.
 - Zoom into the first 100 records to examine the rank-12 volume jump, or export the selected metrics.
 
-One account entering at rank 12 represents **$52.76B** of historical USD activity and **94.44%** of the eligible positive-associated volume. Only **$50.05M** of that account’s activity carries a synthetic laundering label. I explain this concentration on the page so activity coverage is not mistaken for confirmed laundering or case recall.
+At the original **2,747-review cutoff**, selected accounts represent **$60.76B** of eligible USD activity. Within that same activity, **616 laundering-labeled transactions total $148.87M**, or **0.245%** of the total amount to review. I use each transaction’s label for the second amount; I do not count a positive account’s whole history as laundering.
+
+A single synthetic account entering at rank 12 contributes **$52.76B** of total USD activity, of which **$50.05M** is laundering-labeled. The dashboard explains this concentration and keeps synthetic labels separate from confirmed financial crime.
 
 The amount calculations use a fixed September 10 end-of-day snapshot and count each source transaction once. The highest-F1 point is a retrospective diagnostic; I retain the original validation-based review policy. [Read the calculation rules and reproduction steps](docs/DASHBOARD_METHODS.md).
 

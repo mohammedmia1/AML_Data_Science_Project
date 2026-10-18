@@ -8,24 +8,34 @@ The canonical CSV contains 494,707 test account-days and 1,499 positive labels. 
 
 For a prefix of k ranked account-days, I compute precision = TP / k, recall = TP / 1,499, and F1 = 2 × TP / (k + 1,499). Displayed precision is zero for an empty queue. Checking all 494,707 prefixes identifies a unique highest F1 at k = 822: 251 positives and F1 0.216286. This is a retrospective diagnostic, not a newly validated deployment cutoff. The interactive view covers the first 15,000 exact cutoffs, with a first-100 zoom.
 
-## Transaction amounts
+## Two amounts for the same review queue
 
-I fix the review snapshot at September 10, 2022, end of day, and include source activity from September 1–10. It is an account-history snapshot analysis, not a simulation of what was known at an earlier alert timestamp.
+I fix the review snapshot at September 10, 2022, end of day, and include source activity from September 1–10. This is a retrospective account-history snapshot, not a simulation of what was known at an earlier alert timestamp.
 
-- **Review-linked volume:** unique eligible source transactions involving any account represented in the selected account-day prefix.
-- **Positive-associated volume:** unique eligible source transactions involving an account with at least one positive account-day in the selected prefix. All eligible activity of those accounts is included, regardless of each transaction's individual label.
+1. **Total USD activity to review:** all eligible unique transactions involving at least one account represented in the selected account-day prefix.
+2. **Of that, laundering-labeled:** the subset of those same transactions whose raw `Is Laundering` flag equals 1. A positive account-day does not make every transaction in that account’s history positive.
 
-An eligible transaction has both payment and receiving currencies equal to US Dollar. I use amount paid, converted to integer cents before aggregation. No currency conversion is assumed. Both incoming and outgoing transactions qualify, but a source transaction is counted only once per metric, even if both endpoints are selected. Each source row retains its own ingestion identity; identical-looking legitimate rows are not automatically deleted. Multiple selected days for the same account do not repeatedly add its history.
+The percentage below the second amount is **laundering-labeled dollars / total selected USD activity**. It answers how much of the selected review amount carries the synthetic label. An empty queue displays zero. Both amounts move with the same slider and use the same accounts, snapshot, currency filter, and transaction identity.
 
-Account IDs follow the existing model's account identifier convention. There is no customer-to-account mapping, so I do not describe account counts as customer counts.
+An eligible transaction has both payment and receiving currencies equal to US Dollar. I use amount paid, converted to integer cents before aggregation. No currency conversion is assumed. Incoming and outgoing activity qualify, but a source row enters each metric only once even if both endpoints are selected. Multiple selected days for one account do not repeatedly add its history. Each source row retains its ingestion identity; identical-looking genuine transactions are not automatically removed.
 
-The total-volume denominator is $550,759,935,026.91: all eligible USD activity linked to any account in the test population. The positive-associated denominator is $55,871,612,461.95: eligible USD activity linked to any account with a positive test account-day. Each percentage uses its own denominator. Dollar amounts are activity turnover, not balances, confirmed laundering, recovered funds, or measured review effort.
+Account IDs follow the existing model convention. There is no customer-to-account mapping, so account counts are not customer counts. Historical laundering-labeled transactions qualify whenever either endpoint enters the selected account set, even if the selected day itself has a negative label. Labels are used for retrospective evaluation, not to select accounts.
 
-## Why volume jumps at rank 12
+## Verified examples
 
-One synthetic account enters through a positive account-day at rank 12. Its 169,756 eligible USD transactions total **$52,762,770,804.54**, accounting for **94.4357%** of the positive-associated denominator. Only 243 of those transactions have a synthetic laundering label; those transactions total **$50,048,709.64**. This verifies the concentration without describing the whole account history as laundering.
+| Review cutoff | Total USD activity | Laundering-labeled subset | Labeled transactions |
+|---:|---:|---:|---:|
+| 822 | $54,032,936,401.58 | $86,404,704.85 | 482 |
+| 2,747 | $60,764,677,637.38 | $148,871,390.41 | 616 |
+| 15,000 | $96,190,347,119.06 | $234,818,818.53 | 730 |
 
-At 15,000 account-days, positive-associated volume is $53,882,935,622.97, or 96.4406% of its denominator, while account-day recall is 41.0941%. High dollar coverage and high case coverage are different outcomes.
+At 2,747 selected account-days, the labeled subset is about **0.245%** of total review activity. The count of 616 labeled transactions is different from the model’s 389 positive account-days: these metrics have different units and history windows.
+
+One synthetic account entering at rank 12 contributes **$52,762,770,804.54** of total USD activity. Only **243 transactions totaling $50,048,709.64** carry the synthetic laundering label. This explains the jump in total activity without treating the account’s whole history as laundering. Account identifiers and daily account breakdowns are not published with this dashboard.
+
+For the full eligible test-account population, total USD activity is $550,759,935,026.91. Within that activity, 1,586 laundering-labeled transactions total $1,112,496,564.92. The downloadable CSV additionally reports labeled-dollar coverage against this full-population labeled amount; that coverage is separate from the main card’s share of the selected review amount.
+
+Amounts are synthetic transaction activity, not balances, confirmed criminal proceeds, funds recovered, or measured investigator effort. The review queue is selected by the frozen model ranking; these dollar metrics do not change it.
 
 ## Reproduce the aggregates
 
