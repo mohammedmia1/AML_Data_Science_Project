@@ -14,10 +14,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate dashboard JavaScript and controls
+        run: |
+          node --check docs/app.js
+          node scripts/check_dashboard.cjs
       - name: Validate published results
         run: python tests/check_artifacts.py
       - name: Compile runnable Python
-        run: python -m py_compile src/run_canonical.py tests/check_artifacts.py tests/verify_scored_export.py tests/check_notebook_evidence.py
+        run: python -m py_compile scripts/build_dashboard_data.py src/run_canonical.py tests/check_artifacts.py tests/verify_scored_export.py tests/check_notebook_evidence.py
       - name: Validate executed notebook evidence
         run: python tests/check_notebook_evidence.py
       - name: Validate Jupyter notebook JSON
@@ -30,3 +37,4 @@ jobs:
           assert len(nb['cells']) >= 10
           print('PASS: notebook JSON')
           PY
+

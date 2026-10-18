@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "n": 494707,
+    "positives": 1499,
+    "bestK": 822,
+    "defaultK": 2747,
+    "limit": 15000,
+    "historyStart": "2022-09-01",
+    "asOf": "2022-09-10",
+    "sourceRows": 5078345,
+    "historyRows": 5077237,
+    "usdHistoryRows": 1856128,
+    "eligibleVolume": 550759935026.91,
+    "eligiblePositiveVolume": 55871612461.95,
+    "eligibleAccounts": 354447,
+    "eligiblePositiveAccounts": 1397,
+    "labelReconciliation": true,
+    "rankingSHA256": "bf7c4209ff3770c2306c36dde91f56a24f0bd31e87f6faee34ba659738c13fef",
+    "transactionsSHA256": "b19d39f515523373f991b689c07e11e7b0b95c17a2c27a87d91584ae16c5b040"
+  },
+  "checkpoints": {
+    "822": {
+      "tp": 251,
+      "f1": 0.21628608358466178,
+      "volume": 54032936401.58,
+      "positiveVolume": 53190446880.42,
+      "accounts": 777
+    },
+    "2747": {
+      "tp": 389,
+      "f1": 0.1832312764955252,
+      "volume": 60764677637.38,
+      "positiveVolume": 53491793587.31,
+      "accounts": 2618
+    },
+    "15000": {
+      "tp": 616,
+      "f1": 0.07467119219346627,
+      "volume": 96190347119.06,
+      "positiveVolume": 53882935622.97,
+      "accounts": 13755
+    }
+  }
+}

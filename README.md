@@ -47,11 +47,24 @@ The original synthetic transactions were independently reconciled with the froze
 
 **Validation comparison (same 2,500-record budget):** logistic regression ranked **170** positive synthetic labels (PR-AUC **0.0378**); XGBoost ranked **383** (PR-AUC **0.1286**). These measured **validation** results are distinct from the **389 positives on the held-out test**. [See each step and its executed output in the guided notebook](notebooks/AML_Model_Development.ipynb).
 
+## Explore the investigation decision
+
+I built the live dashboard to connect review capacity with detection performance and the amount of transaction activity represented in the queue.
+
+- Move the cutoff one account-day at a time and compare precision, recall, and F1.
+- Compare the original 2,747-review policy with the retrospective highest-F1 cutoff of 822.
+- Inspect unique USD transaction activity linked to selected accounts, including activity associated with selected positive-labeled accounts.
+- Zoom into the first 100 records to examine the rank-12 volume jump, or export the selected metrics.
+
+One account entering at rank 12 represents **$52.76B** of historical USD activity and **94.44%** of the eligible positive-associated volume. Only **$50.05M** of that account’s activity carries a synthetic laundering label. I explain this concentration on the page so activity coverage is not mistaken for confirmed laundering or case recall.
+
+The amount calculations use a fixed September 10 end-of-day snapshot and count each source transaction once. The highest-F1 point is a retrospective diagnostic; I retain the original validation-based review policy. [Read the calculation rules and reproduction steps](docs/DASHBOARD_METHODS.md).
+
 ## Explore the work
 
 | Open | What you will find |
 |:--|:--|
-| [Live case study](https://mohammedmia1.github.io/AML_Data_Science_Project/) | Adjust review capacity and explore the actual held-out ranking trade-off. |
+| [Live case study](https://mohammedmia1.github.io/AML_Data_Science_Project/) | Compare review capacity, precision, recall, F1 and unique USD account-history activity. |
 | [Model development notebook](notebooks/AML_Model_Development.ipynb) | Readable code for temporal splitting, feature transformations, baseline, ranking and evaluation. |
 | [Project walkthrough](PROJECT_GUIDE.md) | Technical reasoning, evaluation boundaries and interview questions. |
 | [Canonical training script](src/run_canonical.py) | Executable reproduction of the frozen model, scored export and website capacity curve. |
@@ -66,6 +79,7 @@ Requires Python **3.13.5** and versions pinned in [`requirements.txt`](requireme
 python -m pip install -r requirements.txt
 python src/run_canonical.py        # requires frozen source TSV
 python tests/check_artifacts.py   # checks published artifacts without the TSV
+node scripts/check_dashboard.cjs # checks interactive dashboard and volume boundaries
 ```
 
 The training script writes to `artifacts/` (ignored by Git). CI validates the **committed metric/website contract and Python syntax**, not complete model retraining. The **guided notebook includes real saved execution outputs** from the checksum-verified synthetic source: the baseline comparison, feature/split checks, and frozen test evaluation. Its [reliability findings section](notebooks/AML_Model_Development.ipynb) explains the input checks, saved evidence and automated tests in plain English, without suggesting production deployment.
@@ -79,3 +93,4 @@ The training script writes to `artifacts/` (ignored by Git). CI validates the **
 - **Tableau** is a usable companion, with further visual polish deferred.
 
 [**Detailed methodology and interview walkthrough →**](PROJECT_GUIDE.md) · [Test design](reports/MODEL_EVALUATION.md) · [Source data contract](data/README.md)
+

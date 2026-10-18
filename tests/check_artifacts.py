@@ -29,7 +29,15 @@ selected = rows[metrics['test_capacity'] - 1]
 assert selected['tp'] == metrics['selected_positives']
 for key in ('precision', 'recall', 'lift'):
     assert math.isclose(selected[key], metrics[key], rel_tol=1e-12), key
-assert 'capacity.json' in page
+assert 'data.json' in (ROOT / 'docs/app.js').read_text()
+volume = json.loads((ROOT / 'docs/data.json').read_text())
+assert volume['meta']['n'] == metrics['test_rows']
+assert volume['meta']['positives'] == metrics['test_positives']
+assert volume['tp'][0] == 0
+assert volume['tp'][1:] == [row['tp'] for row in rows], 'Dashboard ranking differs from published canonical capacity curve'
+assert math.isclose(volume['positiveVolume'][12], 52762770804.54)
+assert 'id="coverage"' not in page
+assert 'First 100' in page
 assert '389' in page
 assert '397' not in page, 'Old historical figure in the website source'
 assert (ROOT / 'models/xgboost_model.json').stat().st_size > 1_000_000
@@ -49,3 +57,4 @@ if actual.exists():
         assert actual_curve['rows'] == rows, 'Rerun capacity curve differs from the published one'
 
 print('PASS: published metrics, capacity curve, site references, and model artifact')
+
